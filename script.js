@@ -1,9 +1,53 @@
+// 🔹 Plyr player setup
+$(".plyr_component").each(function (index) {
+  let thisComponent = $(this);
+
+  let player = new Plyr(thisComponent.find(".plyr_video")[0], {
+    controls: ["play", "progress", "current-time", "mute", "fullscreen"],
+    resetOnEnd: true
+  });
+
+  thisComponent.find(".plyr_cover").on("click", function () {
+    player.play();
+  });
+
+  player.on("ended", () => {
+    thisComponent.removeClass("hide-cover");
+    if (player.fullscreen.active) {
+      player.fullscreen.exit();
+    }
+  });
+
+  player.on("play", () => {
+    $(".plyr_component").removeClass("hide-cover");
+    thisComponent.addClass("hide-cover");
+
+    const prevPlaying = $(".plyr--playing").closest(".plyr_component").not(thisComponent);
+    if (prevPlaying.length > 0) {
+      prevPlaying.find(".plyr_pause-trigger")[0].click();
+    }
+  });
+
+  thisComponent.find(".plyr_pause-trigger").on("click", () => {
+    player.pause();
+  });
+
+  player.on("enterfullscreen", () => {
+    thisComponent.addClass("contain-video");
+  });
+
+  player.on("exitfullscreen", () => {
+    thisComponent.removeClass("contain-video");
+  });
+});
+
+// 🔹 Playlist logic + Memberstack progress + Next/Prev
+
 document.addEventListener("DOMContentLoaded", function () {
   const urlParams = new URLSearchParams(window.location.search);
   const playlistSlug = urlParams.get("playlist");
   const currentLessonSlug = window.location.pathname.split("/").pop().split("?")[0];
 
-  // Pokaż/ukryj playlisty i chaptery
   document.querySelectorAll("[data-playlist-slug]").forEach(item => {
     item.style.display = item.getAttribute("data-playlist-slug") === playlistSlug ? "block" : "none";
   });
@@ -12,28 +56,25 @@ document.addEventListener("DOMContentLoaded", function () {
     chapter.style.display = chapter.getAttribute("data-playlist-slug") === playlistSlug ? "block" : "none";
   });
 
-  // Ustaw href dla lekcji i aktywną lekcję
   document.querySelectorAll("[data-lesson-slug]").forEach(link => {
-    const slug = link.getAttribute("data-lesson-slug");
-    link.setAttribute("href", `/lessons/${slug}?playlist=${playlistSlug}`);
-    if (slug === currentLessonSlug) {
+    const lessonSlug = link.getAttribute("data-lesson-slug");
+    link.setAttribute("href", `/lessons/${lessonSlug}?playlist=${playlistSlug}`);
+    if (lessonSlug === currentLessonSlug) {
       link.classList.add("is-active");
     }
   });
 
-  // Ukryj menu jeśli brak playlisty
   const playlistMenu = document.querySelector("[playlist-menu]");
   if (!playlistSlug && playlistMenu) {
     playlistMenu.style.display = "none";
   }
 
-  // Główna logika Memberstack
   window.addEventListener("memberstack.ready", async function () {
     const memberData = await window.$memberstackDom.getCurrentMember();
     const member = memberData?.data?.member;
 
     if (!member) {
-      console.warn("⚠️ Brak zalogowanego użytkownika.");
+      console.warn("❌ Brak membera po memberstack.ready");
       return;
     }
 
@@ -48,13 +89,11 @@ document.addEventListener("DOMContentLoaded", function () {
       completedLessons[playlistSlug] = [];
     }
 
-    // Podświetl ukończone lekcje
     completedLessons[playlistSlug].forEach(slug => {
       const el = document.querySelector(`[data-lesson-slug="${slug}"] .dash-lesson--complete-mark`);
       if (el) el.classList.add("is-complete");
     });
 
-    // Obsługa checkboxa
     document.querySelectorAll(".dash-lesson--complete-mark").forEach(mark => {
       mark.addEventListener("click", async function (e) {
         e.preventDefault();
@@ -82,12 +121,9 @@ document.addEventListener("DOMContentLoaded", function () {
             completedLessons: JSON.stringify(completedLessons),
           },
         });
-
-        console.log("✅ Zapisano postęp:", completedLessons);
       });
     });
 
-    // Obsługa przycisku NEXT
     const nextBtn = document.getElementById("nextLessonBtn");
 
     if (nextBtn) {
@@ -111,11 +147,8 @@ document.addEventListener("DOMContentLoaded", function () {
               completedLessons: JSON.stringify(completedLessons),
             },
           });
-
-          console.log("✅ Zapisano (Next):", completedLessons);
         }
 
-        // Przejście do następnej lekcji
         const lessonLinks = Array.from(document.querySelectorAll("[data-lesson-slug]"))
           .filter(el => el.closest("[data-playlist-slug]")?.getAttribute("data-playlist-slug") === playlistSlug);
 
@@ -131,7 +164,6 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // Prev/Next przy załadowaniu strony
     const currentSlug = window.location.pathname.split("/").pop().split("?")[0];
 
     const lessonLinks = Array.from(document.querySelectorAll("[data-lesson-slug]"))
@@ -140,8 +172,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const slugs = lessonLinks.map(link => link.getAttribute("data-lesson-slug"));
     const currentIndex = slugs.indexOf(currentSlug);
 
-    const prevBtn = document.getElementById("prevLessonBtn");
-    const nextBtnStatic = document.getElementById("nextLessonBtn");
+    const prevBtn = document.querySelector("#prevLessonBtn");
+    const nextBtnStatic = document.querySelector("#nextLessonBtn");
 
     if (prevBtn && currentIndex > 0) {
       const prevSlug = slugs[currentIndex - 1];

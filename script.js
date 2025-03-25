@@ -225,9 +225,40 @@ window.addEventListener("memberstack.ready", async function () {
         await window.$memberstackDom.updateMember({
           customFields: {
             completedLessons: JSON.stringify(completedLessons)
-              }
+          }
         });
       }
     });
   }
-})();
+});
+
+// 🔹 Nawigacja prev/next (tworzy linki do poprzedniej/następnej lekcji)
+document.addEventListener("DOMContentLoaded", function () {
+  const currentSlug = window.location.pathname.split("/").pop().split("?")[0];
+  const playlistSlug = new URLSearchParams(window.location.search).get("playlist");
+
+  const lessonLinks = Array.from(document.querySelectorAll('[data-lesson-slug]'))
+    .filter(el => el.closest('[data-playlist-slug]')?.getAttribute('data-playlist-slug') === playlistSlug);
+
+  const slugs = lessonLinks.map(link => link.getAttribute('data-lesson-slug'));
+  const currentIndex = slugs.indexOf(currentSlug);
+
+  const prevBtn = document.querySelector("#prevLessonBtn");
+  const nextBtn = document.querySelector("#nextLessonBtn");
+
+  if (prevBtn && currentIndex > 0) {
+    const prevSlug = slugs[currentIndex - 1];
+    prevBtn.href = `/lessons/${prevSlug}?playlist=${playlistSlug}`;
+  } else if (prevBtn) {
+    prevBtn.style.display = "none";
+  }
+
+  if (nextBtn && currentIndex < slugs.length - 1) {
+    const nextSlug = slugs[currentIndex + 1];
+    nextBtn.href = `/lessons/${nextSlug}?playlist=${playlistSlug}`;
+  } else if (nextBtn) {
+    nextBtn.href = "#";
+    const btnText = nextBtn.querySelector(".btn--text");
+    if (btnText) btnText.textContent = "Complete";
+  }
+});

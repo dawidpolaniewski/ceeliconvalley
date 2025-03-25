@@ -140,30 +140,35 @@ document.addEventListener("DOMContentLoaded", function () {
   const memberData = await window.$memberstackDom.getCurrentMember();
   const member = memberData.data?.member;
 
-  if (!member) return;
+  if (!member) {
+    console.warn("Brak zalogowanego użytkownika – Memberstack");
+    return;
+  }
 
   const urlParams = new URLSearchParams(window.location.search);
   const playlistSlug = urlParams.get("playlist");
   const currentLessonSlug = window.location.pathname.split("/").pop();
 
+  // Przygotuj obiekt progressu
   let completedLessons = {};
   try {
     completedLessons = JSON.parse(member.customFields.completedLessons || "{}");
   } catch (e) {
-    console.warn("Invalid JSON in completedLessons");
+    console.warn("Nieprawidłowy JSON w completedLessons");
   }
 
+  // Upewnij się, że jest lista dla playlisty
   if (!completedLessons[playlistSlug]) {
     completedLessons[playlistSlug] = [];
   }
 
-  // Oznacz jako ukończone na wejściu
+  // 🔹 Oznacz lekcje jako ukończone na wejściu
   completedLessons[playlistSlug].forEach(slug => {
     const el = document.querySelector(`[data-lesson-slug="${slug}"] .dash-lesson--complete-mark`);
     if (el) el.classList.add("is-complete");
   });
 
-  // Kliknięcie checkboxa
+  // 🔹 Obsługa kliknięcia w checkbox
   document.querySelectorAll(".dash-lesson--complete-mark").forEach(mark => {
     mark.addEventListener("click", async function (e) {
       e.preventDefault();
@@ -185,6 +190,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
 
+      console.log("ZAPISUJĘ:", JSON.stringify(completedLessons));
+
       await window.$memberstackDom.updateMember({
         customFields: {
           completedLessons: JSON.stringify(completedLessons)
@@ -193,7 +200,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // Kliknięcie "Next"
+  // 🔹 Obsługa przycisku "Next"
   const nextBtn = document.getElementById("nextLessonBtn");
 
   if (nextBtn) {
@@ -210,6 +217,8 @@ document.addEventListener("DOMContentLoaded", function () {
         mark.classList.add("is-complete");
         completedLessons[playlistSlug].push(slug);
 
+        console.log("ZAPISUJĘ (z Next):", JSON.stringify(completedLessons));
+
         await window.$memberstackDom.updateMember({
           customFields: {
             completedLessons: JSON.stringify(completedLessons)
@@ -219,35 +228,3 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 })();
-
-
-// 🔹 Nawigacja next/prev
-document.addEventListener("DOMContentLoaded", function () {
-  const currentSlug = window.location.pathname.split("/").pop().split("?")[0];
-  const playlistSlug = new URLSearchParams(window.location.search).get("playlist");
-
-  const lessonLinks = Array.from(document.querySelectorAll('[data-lesson-slug]'))
-    .filter(el => el.closest('[data-playlist-slug]')?.getAttribute('data-playlist-slug') === playlistSlug);
-
-  const slugs = lessonLinks.map(link => link.getAttribute('data-lesson-slug'));
-  const currentIndex = slugs.indexOf(currentSlug);
-
-  const prevBtn = document.querySelector("#prevLessonBtn");
-  const nextBtn = document.querySelector("#nextLessonBtn");
-
-  if (prevBtn && currentIndex > 0) {
-    const prevSlug = slugs[currentIndex - 1];
-    prevBtn.href = `/lessons/${prevSlug}?playlist=${playlistSlug}`;
-  } else if (prevBtn) {
-    prevBtn.style.display = "none";
-  }
-
-  if (nextBtn && currentIndex < slugs.length - 1) {
-    const nextSlug = slugs[currentIndex + 1];
-    nextBtn.href = `/lessons/${nextSlug}?playlist=${playlistSlug}`;
-  } else if (nextBtn) {
-    nextBtn.href = "#";
-    const btnText = nextBtn.querySelector(".btn--text");
-    if (btnText) btnText.textContent = "Complete";
-  }
-});

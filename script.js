@@ -1,9 +1,10 @@
-// 🔹 Playlist logic
+// 🔹 Playlist logic + progress tracking + Next/Prev nav
 document.addEventListener("DOMContentLoaded", function () {
   const urlParams = new URLSearchParams(window.location.search);
   const playlistSlug = urlParams.get("playlist");
   const currentLessonSlug = window.location.pathname.split('/').pop();
 
+  // 🔹 Ukrywanie/pokazywanie elementów zależnie od playlisty
   document.querySelectorAll('[data-playlist-slug]').forEach(item => {
     item.style.display = "none";
     if (item.getAttribute("data-playlist-slug") === playlistSlug) {
@@ -34,10 +35,8 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!playlistSlug && playlistMenu) {
     playlistMenu.style.display = "none";
   }
-});
 
-// 🔹 Memberstack progress tracking
-document.addEventListener("DOMContentLoaded", function () {
+  // 🔹 Memberstack progress tracking
   window.addEventListener("memberstack.ready", async function () {
     const memberData = await window.$memberstackDom.getCurrentMember();
     const member = memberData.data?.member;
@@ -48,10 +47,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     console.log("✅ Memberstack użytkownik dostępny:", member);
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const playlistSlug = urlParams.get("playlist");
-    const currentLessonSlug = window.location.pathname.split("/").pop();
 
     let completedLessons = {};
     try {
@@ -64,15 +59,18 @@ document.addEventListener("DOMContentLoaded", function () {
       completedLessons[playlistSlug] = [];
     }
 
+    // 🔹 Oznacz jako complete na starcie
     completedLessons[playlistSlug].forEach(slug => {
       const el = document.querySelector(`[data-lesson-slug="${slug}"] .dash-lesson--complete-mark`);
       if (el) el.classList.add("is-complete");
     });
 
+    // 🔹 Klikanie checkboxa
     document.querySelectorAll(".dash-lesson--complete-mark").forEach(mark => {
       mark.addEventListener("click", async function (e) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
 
         const lessonLink = mark.closest("[data-lesson-slug]");
         if (!lessonLink) return;
@@ -90,7 +88,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }
 
-        console.log("ZAPISUJĘ:", JSON.stringify(completedLessons));
+        console.log("💾 ZAPISUJĘ:", JSON.stringify(completedLessons));
 
         await window.$memberstackDom.updateMember({
           customFields: {
@@ -100,10 +98,12 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
+    // 🔹 Obsługa przycisku NEXT
     const nextBtn = document.getElementById("nextLessonBtn");
+
     if (nextBtn) {
       nextBtn.addEventListener("click", async function (e) {
-        e.preventDefault();
+        e.preventDefault(); // Zatrzymujemy przejście zanim zapis się zakończy
 
         const currentLesson = document.querySelector(".dash-chapter-lesson.w--current");
         if (!currentLesson) return;
@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
           mark.classList.add("is-complete");
           completedLessons[playlistSlug].push(slug);
 
-          console.log("ZAPISUJĘ (z Next):", JSON.stringify(completedLessons));
+          console.log("💾 ZAPISUJĘ (z Next):", JSON.stringify(completedLessons));
 
           await window.$memberstackDom.updateMember({
             customFields: {
@@ -126,6 +126,7 @@ document.addEventListener("DOMContentLoaded", function () {
           });
         }
 
+        // 🔁 przejście do kolejnej lekcji (po zapisie!)
         const lessonLinks = Array.from(document.querySelectorAll('[data-lesson-slug]'))
           .filter(el => el.closest('[data-playlist-slug]')?.getAttribute('data-playlist-slug') === playlistSlug);
 
@@ -140,37 +141,32 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       });
     }
+
+    // 🔹 Obsługa Prev/Next przy ładowaniu strony
+    const currentSlug = window.location.pathname.split("/").pop().split("?")[0];
+    const lessonLinks = Array.from(document.querySelectorAll('[data-lesson-slug]'))
+      .filter(el => el.closest('[data-playlist-slug]')?.getAttribute('data-playlist-slug') === playlistSlug);
+
+    const slugs = lessonLinks.map(link => link.getAttribute('data-lesson-slug'));
+    const currentIndex = slugs.indexOf(currentSlug);
+
+    const prevBtn = document.querySelector("#prevLessonBtn");
+    const nextBtn2 = document.querySelector("#nextLessonBtn");
+
+    if (prevBtn && currentIndex > 0) {
+      const prevSlug = slugs[currentIndex - 1];
+      prevBtn.href = `/lessons/${prevSlug}?playlist=${playlistSlug}`;
+    } else if (prevBtn) {
+      prevBtn.style.display = "none";
+    }
+
+    if (nextBtn2 && currentIndex < slugs.length - 1) {
+      const nextSlug = slugs[currentIndex + 1];
+      nextBtn2.href = `/lessons/${nextSlug}?playlist=${playlistSlug}`;
+    } else if (nextBtn2) {
+      nextBtn2.href = "#";
+      const btnText = nextBtn2.querySelector(".btn--text");
+      if (btnText) btnText.textContent = "Complete";
+    }
   });
-});
-
-
-// 🔹 Nawigacja prev/next (tworzy linki do poprzedniej/następnej lekcji)
-document.addEventListener("DOMContentLoaded", function () {
-  const currentSlug = window.location.pathname.split("/").pop().split("?")[0];
-  const playlistSlug = new URLSearchParams(window.location.search).get("playlist");
-
-  const lessonLinks = Array.from(document.querySelectorAll('[data-lesson-slug]'))
-    .filter(el => el.closest('[data-playlist-slug]')?.getAttribute('data-playlist-slug') === playlistSlug);
-
-  const slugs = lessonLinks.map(link => link.getAttribute('data-lesson-slug'));
-  const currentIndex = slugs.indexOf(currentSlug);
-
-  const prevBtn = document.querySelector("#prevLessonBtn");
-  const nextBtn = document.querySelector("#nextLessonBtn");
-
-  if (prevBtn && currentIndex > 0) {
-    const prevSlug = slugs[currentIndex - 1];
-    prevBtn.href = `/lessons/${prevSlug}?playlist=${playlistSlug}`;
-  } else if (prevBtn) {
-    prevBtn.style.display = "none";
-  }
-
-  if (nextBtn && currentIndex < slugs.length - 1) {
-    const nextSlug = slugs[currentIndex + 1];
-    nextBtn.href = `/lessons/${nextSlug}?playlist=${playlistSlug}`;
-  } else if (nextBtn) {
-    nextBtn.href = "#";
-    const btnText = nextBtn.querySelector(".btn--text");
-    if (btnText) btnText.textContent = "Complete";
-  }
 });

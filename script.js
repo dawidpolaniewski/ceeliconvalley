@@ -225,9 +225,9 @@ window.addEventListener("memberstack.ready", async function () {
         await window.$memberstackDom.updateMember({
           customFields: {
             completedLessons: JSON.stringify(completedLessons)
-          }
+              }
         });
       }
     });
   }
-});
+})();

@@ -136,21 +136,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 // 🔹 Progress tracking using Memberstack
-(async function () {
-let member = null;
+window.addEventListener("memberstack.ready", async function () {
+  const memberData = await window.$memberstackDom.getCurrentMember();
+  const member = memberData.data?.member;
 
-// Poczekaj aż member będzie dostępny
-for (let i = 0; i < 10; i++) {
-  const res = await window.$memberstackDom.getCurrentMember();
-  member = res.data?.member;
-  if (member) break;
-  await new Promise(r => setTimeout(r, 300)); // czekaj 300ms
-}
+  if (!member) {
+    console.warn("⚠️ Nadal brak użytkownika po memberstack.ready");
+    return;
+  }
 
-if (!member) {
-  console.warn("Brak zalogowanego użytkownika – Memberstack (po odczekaniu)");
-  return;
-}
+  console.log("✅ Memberstack użytkownik dostępny:", member);
 
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -235,4 +230,4 @@ if (!member) {
       }
     });
   }
-})();
+});

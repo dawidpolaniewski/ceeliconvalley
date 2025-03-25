@@ -6,7 +6,7 @@ $(".plyr_component").each(function (index) {
     controls: ["play", "progress", "current-time", "mute", "fullscreen"],
     resetOnEnd: true
   });
-  
+
   // custom video cover
   thisComponent.find(".plyr_cover").on("click", function () {
     player.play();

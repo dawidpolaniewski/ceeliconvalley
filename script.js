@@ -137,13 +137,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // 🔹 Progress tracking using Memberstack
 (async function () {
-  const memberData = await window.$memberstackDom.getCurrentMember();
-  const member = memberData.data?.member;
+let member = null;
 
-  if (!member) {
-    console.warn("Brak zalogowanego użytkownika – Memberstack");
-    return;
-  }
+// Poczekaj aż member będzie dostępny
+for (let i = 0; i < 10; i++) {
+  const res = await window.$memberstackDom.getCurrentMember();
+  member = res.data?.member;
+  if (member) break;
+  await new Promise(r => setTimeout(r, 300)); // czekaj 300ms
+}
+
+if (!member) {
+  console.warn("Brak zalogowanego użytkownika – Memberstack (po odczekaniu)");
+  return;
+}
+
 
   const urlParams = new URLSearchParams(window.location.search);
   const playlistSlug = urlParams.get("playlist");

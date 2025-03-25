@@ -1,5 +1,3 @@
-<script src="https://cdn.plyr.io/3.7.2/plyr.js"></script>
-<script>
 $(".plyr_component").each(function (index) {
   let thisComponent = $(this);
 
@@ -44,9 +42,7 @@ $(".plyr_component").each(function (index) {
     thisComponent.removeClass("contain-video");
   });
 });
-</script>
 
-<script>
 document.addEventListener("DOMContentLoaded", function () {
   const urlParams = new URLSearchParams(window.location.search);
   const playlistSlug = urlParams.get("playlist");
@@ -82,9 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
-</script>
 
-<script>
 document.addEventListener("DOMContentLoaded", function () {
   const playlistMenu = document.querySelector('[playlist-menu]');
   const urlParams = new URLSearchParams(window.location.search);
@@ -94,9 +88,8 @@ document.addEventListener("DOMContentLoaded", function () {
     playlistMenu.style.display = "none";
   }
 });
-</script>
 
-<script>
+
 document.addEventListener("DOMContentLoaded", function () {
   const dropdowns = document.querySelectorAll(".dash-chapter-dropdown");
 
@@ -155,9 +148,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
-</script>
 
-<script>
+
 document.addEventListener("DOMContentLoaded", function () {
   const playlistSlug = new URLSearchParams(window.location.search).get("playlist");
 
@@ -194,9 +186,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 });
-</script>
 
-<script>
+
 document.addEventListener("DOMContentLoaded", function () {
   const nextBtn = document.getElementById("nextLessonBtn");
 
@@ -223,9 +214,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
-</script>
 
-<script>
+
 document.addEventListener("DOMContentLoaded", function () {
   const currentSlug = window.location.pathname.split("/").pop().split("?")[0];
   const playlistSlug = new URLSearchParams(window.location.search).get("playlist");
@@ -261,4 +251,3 @@ document.addEventListener("DOMContentLoaded", function () {
     if (btnText) btnText.textContent = "Complete";
   }
 });
-</script>
